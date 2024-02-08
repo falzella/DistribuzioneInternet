@@ -20,24 +20,35 @@ public class ProgettoTPS {
     private static int start;
     private static int end;
     public static void main(String[] args) {
-        try {
-            Socket clientSocket = new Socket("64.227.73.44", 5555);
+        int maxRetryAttempts = 3;
 
-            // Invia dati al server
-            OutputStream outputStream = clientSocket.getOutputStream();
-            sendData(outputStream);
+        for (int attempt = 1; attempt <= maxRetryAttempts; attempt++) {
+            try {
+                Socket clientSocket = new Socket("64.227.73.44", 5555);
+                clientSocket.setSoTimeout(3000);
+                // Invia dati al server
+                OutputStream outputStream = clientSocket.getOutputStream();
+                sendData(outputStream);
 
-            // Ricevi dati dal server
-            InputStream inputStream = clientSocket.getInputStream();
-            List<Integer> primeNumbers = new ArrayList<>();
-            primeNumbers=receiveData(inputStream);
-            String jsonInput = "{\"start\": "+start+", \"end\": "+end+", \"prime_numbers\": "+primeNumbers+", \"completed\": true}";
-            outputStream.write(jsonInput.getBytes());
-            
-            
-            clientSocket.close();
-        } catch (IOException e) {
-            System.out.println("Client error: " + e.getMessage());
+                // Ricevi dati dal server
+                InputStream inputStream = clientSocket.getInputStream();
+                List<Integer> primeNumbers = new ArrayList<>();
+                primeNumbers = receiveData(inputStream);
+
+                if (primeNumbers != null) {
+                    String jsonInput = "{\"start\": " + start + ", \"end\": " + end + ", \"prime_numbers\": " + primeNumbers + ", \"completed\": true}";
+                    outputStream.write(jsonInput.getBytes());
+                }
+
+                clientSocket.close();
+                break;  // Esci dal ciclo se la connessione e la comunicazione sono avvenute con successo
+            } catch (IOException e) {
+                System.out.println("Connection attempt #" + attempt + " failed. Retrying...");
+                if (attempt == maxRetryAttempts) {
+                    System.out.println("Max retry attempts reached. Exiting.");
+                    break;
+                }
+            }
         }
     }
 
