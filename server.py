@@ -76,7 +76,7 @@ def distribute_work(available_clients, end_range, request_start, request_end):
 def save_range_to_file(start, end, request_start, request_end):
     with open("ranges.txt", "a") as file:
         file.write(f"{start}-{end}\n")
-
+    
 def save_prime_numbers_to_file(prime_numbers):
     with open("primeNumbers.txt", "a") as file:
         file.write(f"{prime_numbers}\n")
@@ -130,9 +130,9 @@ def main():
             if thread != threading.current_thread():
                 thread.join()
 
-        if len(available_clients) <= 3 and len(available_clients) > 0:
+        if len(available_clients) > 0:
             distribute_work(available_clients, end_range, start_range, end_range)
-            time.sleep(1)
+            #time.sleep(1)
 
             if not completed:
                 receive_and_print_primes(available_clients)
@@ -141,9 +141,9 @@ def main():
 
             available_clients = []
 
-        if num_operations >= 5:
+        if num_operations >= 20:
             last_range_end = start_range
-            first_action_time = last_range_end - 100*5
+            first_action_time = last_range_end - 100*20
             print("Tempo associato al primo numero del range della prima azione:", first_action_time)
             print("Ultimo numero del range dell'ultima azione:", last_range_end)
             last_action_time = time.time() - start_time
