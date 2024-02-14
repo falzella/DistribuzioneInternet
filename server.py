@@ -2,7 +2,6 @@ import socket
 import threading
 import json
 import time
-import os
 
 # Aggiungi un lock globale
 lock = threading.Lock()
@@ -28,43 +27,39 @@ def check_range_completion(request_start, request_end):
     with open("ranges.txt", "r") as file:
         lines = file.readlines()
         for line in lines:
-            #stored_start, stored_end = map(int, line.strip().split('-'))
             s = line.strip().split('-')
-            if len(s)>=2:
+            if len(s) >= 2:
                 stored_start = int(s[0])
-                stored_end =int(s[1])
+                stored_end = int(s[1])
             else:
                 stored_start = 0
-                stored_end=0
+                stored_end = 0
             if request_start == stored_start and request_end == stored_end:
                 return True
     return False
 
-def distribute_work(available_clients,end_range, request_start, request_end):
+def distribute_work(available_clients, end_range, request_start, request_end):
     global completed, last_saved_end, start_range  # Dichiarazione della variabile completed e last_saved_end come globali
 
     step = 100
 
     while check_range_completion(start_range, start_range + step):
-            print(f"Range {start_range}-{start_range + step} already completed. Skipping calculation.")
-            completed = True
-            start_range += step
+        print(f"Range {start_range}-{start_range + step} already completed. Skipping calculation.")
+        completed = True
+        start_range += step
 
     if (start_range + step > end_range + 1):
         completed = True
 
-            # Stampa l'intervallo richiesto solo una volta, all'inizio
-
     for client_socket in available_clients:
         if (completed == True  and start_range + step > end_range + 1):
-            completed=False
+            completed = False
             range_data = {"completed": True}
             data_json = json.dumps(range_data) + "\n"
             client_socket.send(data_json.encode())
         else:
-
             if(completed == True):
-                completed=False
+                completed = False
 
             print(f"Work distribution for range {request_start}-{request_end}")
             range_data = {"start": start_range, "end": start_range + step}
@@ -72,7 +67,6 @@ def distribute_work(available_clients,end_range, request_start, request_end):
             client_socket.send(data_json.encode())
             start_range += step
 
-            # Salva il range su un file solo se inizia dal valore successivo a last_saved_end
             if start_range > last_saved_end:
                 save_range_to_file(start_range - step, start_range, request_start, request_end)
                 last_saved_end = start_range
@@ -95,16 +89,14 @@ def receive_and_print_primes(available_clients):
         prime_numbers = result_data.get("prime_numbers", [])
         completed = result_data.get("completed", False)
 
-        if start_range is not None and end_range is not None and start_range != 0 and end_range!= 0:
+        if start_range is not None and end_range is not None and start_range != 0 and end_range != 0:
             print(f"Prime numbers received from {client_socket.getpeername()} for range {start_range}-{end_range}: {prime_numbers}")
             save_prime_numbers_to_file(prime_numbers)
 
             if completed:
                 print(f"All prime numbers in the range {start_range}-{end_range} have been calculated by {client_socket.getpeername()}.")
-                # Salva il range solo se inizia dal valore successivo a last_saved_end
                 if start_range > last_saved_end:
                     save_range_to_file(start_range, end_range, start_range, end_range)
-
         else:
             if start_range == 0 and end_range == 0:
                 print("calculation already completed")
@@ -122,34 +114,26 @@ def main():
 
     available_clients = []
     start_range = 1
-    end_range = 800
+    end_range = 1000000000
 
     while True:
         client, addr = server.accept()
         client_handler = threading.Thread(target=handle_client, args=(client, addr, available_clients))
         client_handler.start()
 
-        # Attendi la terminazione di tutti i thread dei client prima di distribuire il lavoro
         for thread in threading.enumerate():
             if thread != threading.current_thread():
                 thread.join()
 
-
         if len(available_clients) <= 3 and len(available_clients) > 0:
             distribute_work(available_clients, end_range, start_range, end_range)
-            #start_range += 100  # Update for the next distribution
+            time.sleep(1)
 
-
-
-            time.sleep(1)  # Wait for 1 second
-
-            # Ricevi e stampa i numeri primi dai client
             if not completed:
                 receive_and_print_primes(available_clients)
             else:
                 print("Calculation completed")
 
-            # Reset available clients for the next iteration
             available_clients = []
 
 if __name__ == "__main__":
