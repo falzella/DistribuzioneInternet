@@ -2,17 +2,16 @@ import socket
 import threading
 import json
 import time
+import os
 
-# Aggiungi un lock globale
 lock = threading.Lock()
-
-# Dichiarazione globale della variabile completed
 completed = False
-
-# Aggiungi la variabile globale per tenere traccia dell'ultimo valore di "end" salvato
 last_saved_end = 0
+num_operations = 0
+start_time = None
 
 def handle_client(client_socket, address, available_clients):
+    global num_operations
     data = client_socket.recv(1024).decode()
     try:
         json_data = json.loads(data)
@@ -20,10 +19,13 @@ def handle_client(client_socket, address, available_clients):
             with lock:
                 print(f"Client {address} is available.")
                 available_clients.append(client_socket)
+                num_operations += 1
     except json.JSONDecodeError:
         pass
 
 def check_range_completion(request_start, request_end):
+    if not os.path.exists("ranges.txt"):
+        open("ranges.txt", "a").close()  # Creazione del file se non esiste
     with open("ranges.txt", "r") as file:
         lines = file.readlines()
         for line in lines:
@@ -39,7 +41,7 @@ def check_range_completion(request_start, request_end):
     return False
 
 def distribute_work(available_clients, end_range, request_start, request_end):
-    global completed, last_saved_end, start_range  # Dichiarazione della variabile completed e last_saved_end come globali
+    global completed, last_saved_end, start_range, num_operations
 
     step = 100
 
@@ -104,7 +106,7 @@ def receive_and_print_primes(available_clients):
                 print(f"Invalid data received from {client_socket.getpeername()}")
 
 def main():
-    global completed, last_saved_end, start_range  # Dichiarazione della variabile completed e last_saved_end come globali
+    global completed, last_saved_end, start_range, num_operations, start_time
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(('0.0.0.0', 5555))
@@ -115,9 +117,12 @@ def main():
     available_clients = []
     start_range = 1
     end_range = 1000000000
+    num_operations = 0
 
     while True:
         client, addr = server.accept()
+        if(num_operations == 0):
+            start_time = time.time()
         client_handler = threading.Thread(target=handle_client, args=(client, addr, available_clients))
         client_handler.start()
 
@@ -135,6 +140,20 @@ def main():
                 print("Calculation completed")
 
             available_clients = []
+
+        if num_operations >= 5:
+            last_range_end = start_range
+            first_action_time = last_range_end - 100*5
+            print("Tempo associato al primo numero del range della prima azione:", first_action_time)
+            print("Ultimo numero del range dell'ultima azione:", last_range_end)
+            last_action_time = time.time() - start_time
+            print("Tempo associato all'ultimo numero del range dell'ultima azione:", last_action_time)
+
+            with open("tempi.txt", "a") as tempi_file:
+                tempi_file.write(f"Tempo fra [{first_action_time}-{last_range_end}]: {last_action_time}\n")
+
+            num_operations = 0
+            time.sleep(1)
 
 if __name__ == "__main__":
     main()
