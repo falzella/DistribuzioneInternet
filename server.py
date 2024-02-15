@@ -43,7 +43,7 @@ def check_range_completion(request_start, request_end):
 def distribute_work(available_clients, end_range, request_start, request_end):
     global completed, last_saved_end, start_range, num_operations
 
-    step = 100
+    step = 10000
 
     while check_range_completion(start_range, start_range + step):
         print(f"Range {start_range}-{start_range + step} already completed. Skipping calculation.")
@@ -83,7 +83,7 @@ def save_prime_numbers_to_file(prime_numbers):
 
 def receive_and_print_primes(available_clients):
     for client_socket in available_clients:
-        result_data = client_socket.recv(1024).decode()
+        result_data = client_socket.recv(4096).decode()
         result_data = json.loads(result_data)
 
         start_range = result_data.get("start", None)
