@@ -9,10 +9,11 @@ completed = False
 last_saved_end = 0
 num_operations = 0
 start_time = None
+step_global= 0
 
 def handle_client(client_socket, address, available_clients):
     global num_operations
-    data = client_socket.recv(1024).decode()
+    data = client_socket.recv(1048576).decode()
     try:
         json_data = json.loads(data)
         if "disponibile" in json_data:
@@ -41,10 +42,10 @@ def check_range_completion(request_start, request_end):
     return False
 
 def distribute_work(available_clients, end_range, request_start, request_end):
-    global completed, last_saved_end, start_range, num_operations
+    global completed, last_saved_end, start_range, num_operations, step_global
 
-    step = 10000
-
+    step = 100000
+    step_global=step
     while check_range_completion(start_range, start_range + step):
         print(f"Range {start_range}-{start_range + step} already completed. Skipping calculation.")
         completed = True
@@ -83,7 +84,7 @@ def save_prime_numbers_to_file(prime_numbers):
 
 def receive_and_print_primes(available_clients):
     for client_socket in available_clients:
-        result_data = client_socket.recv(4096).decode()
+        result_data = client_socket.recv(1048576).decode()
         result_data = json.loads(result_data)
 
         start_range = result_data.get("start", None)
@@ -106,7 +107,7 @@ def receive_and_print_primes(available_clients):
                 print(f"Invalid data received from {client_socket.getpeername()}")
 
 def main():
-    global completed, last_saved_end, start_range, num_operations, start_time
+    global completed, last_saved_end, start_range, num_operations, start_time, step_global
 
     server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     server.bind(('0.0.0.0', 5555))
@@ -143,7 +144,7 @@ def main():
 
         if num_operations >= 20:
             last_range_end = start_range
-            first_action_time = last_range_end - 100*20
+            first_action_time = last_range_end - step_global*20
             print("Tempo associato al primo numero del range della prima azione:", first_action_time)
             print("Ultimo numero del range dell'ultima azione:", last_range_end)
             last_action_time = time.time() - start_time

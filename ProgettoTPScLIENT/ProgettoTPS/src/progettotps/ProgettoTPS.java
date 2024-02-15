@@ -20,7 +20,7 @@ public class ProgettoTPS {
     private static int start;
     private static int end;
     public static void main(String[] args) throws InterruptedException {
-        int maxRetryAttempts = 3;
+        int maxRetryAttempts = 10;
         int attempt;
         while(true){
             for (attempt = 1; attempt <= maxRetryAttempts; attempt++) {
