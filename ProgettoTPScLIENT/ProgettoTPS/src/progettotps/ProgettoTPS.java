@@ -29,7 +29,7 @@ public class ProgettoTPS {
                         Thread.sleep(3000);
                     }
 
-                    Socket clientSocket = new Socket("127.0.0.1", 5555);
+                    Socket clientSocket = new Socket("64.227.73.44", 5555);
                     
                     // Invia dati al server
                     OutputStream outputStream = clientSocket.getOutputStream();

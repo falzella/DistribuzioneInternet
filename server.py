@@ -84,7 +84,13 @@ def save_prime_numbers_to_file(prime_numbers):
 
 def receive_and_print_primes(available_clients):
     for client_socket in available_clients:
-        result_data = client_socket.recv(1048576).decode()
+        result_data = b""
+        while True:
+            chunk = client_socket.recv(1048576)
+            if not chunk:
+                break
+            result_data += chunk
+        result_data = result_data.decode()
         result_data = json.loads(result_data)
 
         start_range = result_data.get("start", None)
